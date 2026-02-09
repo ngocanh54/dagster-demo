@@ -325,20 +325,29 @@ def test_cleaned_users():
 **Airflow:**
 ```
 dags/
-├── user_posts_pipeline.py  # 200+ lines
-├── sql/
-│   └── queries.sql
-└── config/
-    └── connections.yaml
+├── user_posts_pipeline/     # DAG folder
+│   ├── dag.py              # Main DAG definition
+│   ├── config.yaml         # Configuration (if using DAG factory)
+│   └── sql/
+│       └── queries.sql
+├── another_pipeline/
+│   ├── dag.py
+│   └── config.yaml
+└── common/                  # Shared utilities
+    ├── operators/
+    └── utils/
 ```
 
 **Dagster:**
 ```
 src/my_project/
-├── definitions.py          # Entry point (30 lines)
+├── definitions.py          # Entry point
 ├── defs/
-│   ├── assets.py          # Asset definitions (150 lines)
-│   └── schedules.py       # Schedules (30 lines)
+│   ├── assets.py          # Asset definitions
+│   ├── schedules.py       # Schedules
+│   └── resources.py       # Resources (optional)
+└── config/                 # Configuration (optional)
+    └── sources.yaml
 ```
 
 ## Running the Pipeline
