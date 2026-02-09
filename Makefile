@@ -41,7 +41,7 @@ dev:
 	@echo "Starting Dagster webserver..."
 	@echo "Access the UI at: http://localhost:3000"
 	@echo ""
-	$(VENV)/bin/dagster dev -m my_project
+	$(VENV)/bin/dagster dev -m ingestion_sample
 
 # Run tests
 test:
