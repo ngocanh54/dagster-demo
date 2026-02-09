@@ -3,15 +3,31 @@ Data Mart Assets
 
 These assets transform raw ingested data into analytics-ready data marts.
 They depend on assets from the ingestion_pipelines code location.
+
+NOTE: Cross-code-location dependencies require declaring source assets.
 """
 
 import os
 import pandas as pd
-from dagster import asset, AssetExecutionContext, AssetIn, Output, MetadataValue
+from dagster import (
+    asset,
+    AssetExecutionContext,
+    AssetIn,
+    Output,
+    MetadataValue,
+    SourceAsset,
+)
 
 # Output directory
 OUTPUT_DIR = "output"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Declare external assets from ingestion_pipelines code location
+# These are produced by ingestion_pipelines and consumed here
+raw_todos_source = SourceAsset(key="raw_todos")
+raw_comments_source = SourceAsset(key="raw_comments")
+raw_albums_source = SourceAsset(key="raw_albums")
+raw_photos_source = SourceAsset(key="raw_photos")
 
 
 @asset(
