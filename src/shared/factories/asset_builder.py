@@ -211,6 +211,14 @@ class AssetBuilder:
         built_assets = {}
         asset_list = []
 
+        # Include source assets in the lookup so dependencies can reference them
+        source_assets = self.build_source_assets()
+        for source_asset in source_assets:
+            # SourceAssets don't have a 'key' attribute directly accessible,
+            # but we can get it from the asset key
+            source_key = source_asset.key.path[0] if hasattr(source_asset.key, 'path') else str(source_asset.key)
+            built_assets[source_key] = source_asset
+
         # First pass: Create all assets
         for asset_name, asset_config in assets_config.items():
             asset_type = asset_config.get('type', 'transform')
