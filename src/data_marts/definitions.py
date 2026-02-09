@@ -13,7 +13,7 @@ This demonstrates:
 from dagster import Definitions
 
 # Import source assets (from ingestion_pipelines) and data mart assets
-from .defs import (
+from .assets import (
     # Source assets from ingestion_pipelines code location
     raw_todos_source,
     raw_comments_source,

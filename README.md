@@ -27,14 +27,12 @@ dagster_demo/
 │   ├── ingestion_pipelines/         # Code Location 1: Raw data ingestion (YAML)
 │   │   ├── definitions.py          # Loads YAML pipelines
 │   │   └── config/                 # YAML pipeline configs (with schedules)
-│   │       ├── sample_pipeline.yaml     # With schedule
+│   │       ├── sample_pipeline.yaml
 │   │       └── albums_pipeline.yaml
 │   │
 │   ├── data_marts/                 # Code Location 2: Analytics marts (Python)
-│   │   ├── definitions.py          # Loads hand-written assets
-│   │   ├── config/                 # (Optional YAML configs)
-│   │   └── defs/
-│   │       └── assets.py           # Mart transformations
+│   │   ├── definitions.py          # Loads Python assets
+│   │   └── assets.py               # Mart transformations
 │   │
 │   └── shared/                     # Shared utilities
 │       └── factories/              # Factory pattern (like Airflow's plugins/)
