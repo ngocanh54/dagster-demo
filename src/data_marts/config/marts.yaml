@@ -1,4 +1,4 @@
-# Data Marts - YAML-defined analytics marts
+# Data Marts - YAML-defined analytics marts with schedule
 #
 # This demonstrates cross-code-location dependencies using the factory pattern.
 # Sources are external assets from ingestion_pipelines.
@@ -27,3 +27,9 @@ assets:
     depends_on:
       - raw_albums
       - raw_photos
+
+# Schedule for daily mart refresh (runs after ingestion)
+schedules:
+  - name: daily_marts_refresh
+    cron: "0 4 * * *"  # Daily at 4 AM (after ingestion at 2-3 AM)
+    asset_selection: "*"
