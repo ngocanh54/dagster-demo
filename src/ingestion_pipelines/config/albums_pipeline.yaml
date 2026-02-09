@@ -1,0 +1,35 @@
+# Albums Pipeline - Another YAML-defined pipeline example
+# This demonstrates having multiple independent pipelines in the same project
+#
+# This pipeline:
+# 1. Fetches albums and photos from JSONPlaceholder API (parallel)
+# 2. Combines them into enriched albums
+# 3. Creates album statistics
+
+assets:
+  # Fetch albums data
+  raw_albums:
+    type: api_fetch
+    url: https://jsonplaceholder.typicode.com/albums
+    description: Fetch albums data from JSONPlaceholder API
+
+  # Fetch photos data (runs in parallel with albums)
+  raw_photos:
+    type: api_fetch
+    url: https://jsonplaceholder.typicode.com/photos
+    description: Fetch photos data from JSONPlaceholder API
+
+  # Combine albums with photo counts
+  enriched_albums:
+    type: transform
+    description: Enrich albums with photo statistics
+    depends_on:
+      - raw_albums
+      - raw_photos
+
+  # Generate album statistics
+  album_stats:
+    type: transform
+    description: Generate statistics by album
+    depends_on:
+      - enriched_albums

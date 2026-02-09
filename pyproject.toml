@@ -3,13 +3,14 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ingestion_sample"
+name = "dagster-demo"
 version = "0.1.0"
 dependencies = [
     "dagster",
     "dagster-webserver",
     "pandas",
     "requests",
+    "pyyaml",
 ]
 
 [project.optional-dependencies]

@@ -1,7 +1,7 @@
 """
 Asset Builder - Dagster equivalent of Airflow's DAGBuilder pattern.
 
-This module provides a factory for dynamically creating Dagster assets from YAML configuration,
+This module provides a factory for dynamically creating Dagster assets and schedules from YAML,
 similar to how Airflow's plugins/dagbuilder.py creates DAGs from config files.
 
 Example YAML structure:
@@ -17,6 +17,11 @@ Example YAML structure:
         depends_on:
           - raw_data
         description: Transform raw data
+
+    schedules:
+      - name: daily_refresh
+        cron: "0 2 * * *"
+        asset_selection: "*"  # All assets, or list specific ones
 """
 
 import os
@@ -29,8 +34,11 @@ from pathlib import Path
 from dagster import (
     asset,
     AssetExecutionContext,
+    AssetSelection,
     Output,
     MetadataValue,
+    ScheduleDefinition,
+    define_asset_job,
 )
 
 
@@ -196,6 +204,68 @@ class AssetBuilder:
 
         return asset_list
 
+    def build_schedules(self, assets: List[Any]) -> List[ScheduleDefinition]:
+        """
+        Build schedules from YAML configuration.
+
+        Similar to how Airflow defines schedules in DAG config:
+            schedule: "0 2 * * *"
+
+        Args:
+            assets: List of assets to schedule
+
+        Returns:
+            List of schedule definitions
+        """
+        schedules_config = self.config.get('schedules', [])
+        schedules = []
+
+        for schedule_config in schedules_config:
+            schedule_name = schedule_config.get('name')
+            cron_schedule = schedule_config.get('cron')
+            asset_selection = schedule_config.get('asset_selection', '*')  # "*" means all assets
+
+            # Create job for the assets
+            if asset_selection == '*':
+                selection = AssetSelection.all()
+            else:
+                # Select specific assets
+                selection = AssetSelection.assets(*[a for a in assets if a.key.path[0] in asset_selection])
+
+            job = define_asset_job(
+                name=f"{schedule_name}_job",
+                selection=selection,
+            )
+
+            schedule = ScheduleDefinition(
+                name=schedule_name,
+                job=job,
+                cron_schedule=cron_schedule,
+            )
+
+            schedules.append(schedule)
+
+        return schedules
+
+    def build_all(self) -> Dict[str, Any]:
+        """
+        Build both assets and schedules from YAML.
+
+        Returns:
+            Dictionary with 'assets', 'schedules', and 'jobs' keys
+        """
+        assets = self.build_assets()
+        schedules = self.build_schedules(assets)
+
+        # Extract jobs from schedules
+        jobs = [schedule.job for schedule in schedules] if schedules else []
+
+        return {
+            'assets': assets,
+            'schedules': schedules,
+            'jobs': jobs,
+        }
+
 
 def build_assets_from_yaml(yaml_path: str, output_dir: str = "output") -> List[Any]:
     """
@@ -203,7 +273,7 @@ def build_assets_from_yaml(yaml_path: str, output_dir: str = "output") -> List[A
 
     Usage:
         # In your definitions.py
-        from ingestion_sample.factories import build_assets_from_yaml
+        from shared.factories import build_assets_from_yaml
 
         config_assets = build_assets_from_yaml("config/pipeline.yaml")
 
@@ -220,3 +290,32 @@ def build_assets_from_yaml(yaml_path: str, output_dir: str = "output") -> List[A
     """
     builder = AssetBuilder(yaml_path, output_dir)
     return builder.build_assets()
+
+
+def build_from_yaml(yaml_path: str, output_dir: str = "output") -> Dict[str, Any]:
+    """
+    Build both assets and schedules from a YAML file.
+
+    Similar to Airflow's DagBuilder which creates DAG + schedule from config.
+
+    Usage:
+        # In your definitions.py
+        from shared.factories import build_from_yaml
+
+        pipeline = build_from_yaml("config/pipeline.yaml")
+
+        defs = Definitions(
+            assets=pipeline['assets'],
+            schedules=pipeline['schedules'],
+            jobs=pipeline['jobs'],
+        )
+
+    Args:
+        yaml_path: Path to YAML configuration file
+        output_dir: Directory for output files
+
+    Returns:
+        Dictionary with 'assets', 'schedules', and 'jobs'
+    """
+    builder = AssetBuilder(yaml_path, output_dir)
+    return builder.build_all()

@@ -1,0 +1,16 @@
+# Dagster Workspace Configuration
+# This file defines multiple "code locations" (similar to having multiple projects)
+#
+# In Airflow, you'd have multiple DAG folders.
+# In Dagster, you have multiple code locations defined here.
+
+load_from:
+  # Ingestion Pipelines - Data ingestion from external sources
+  - python_module:
+      module_name: ingestion_pipelines
+      location_name: ingestion_pipelines
+
+  # Data Marts - Aggregated analytics tables
+  - python_module:
+      module_name: data_marts
+      location_name: data_marts

@@ -1,0 +1,45 @@
+# Sample Pipeline - Defined entirely in YAML (like Airflow's DAGBuilder pattern)
+#
+# In Airflow, you'd have:
+#   dag_id: sample_pipeline
+#   schedule: "0 2 * * *"
+#   tasks: [...]
+#
+# In Dagster with this factory pattern:
+#   assets: [...]
+#   schedules: [...]
+
+# Assets definition
+assets:
+  # Step 1: Fetch todos data
+  raw_todos:
+    type: api_fetch
+    url: https://jsonplaceholder.typicode.com/todos
+    description: Fetch todos data from JSONPlaceholder API
+
+  # Step 2: Fetch comments data (runs in parallel with todos)
+  raw_comments:
+    type: api_fetch
+    url: https://jsonplaceholder.typicode.com/comments
+    description: Fetch comments data from JSONPlaceholder API
+
+  # Step 3: Combine the data
+  merged_data:
+    type: transform
+    description: Merge todos and comments data
+    depends_on:
+      - raw_todos
+      - raw_comments
+
+  # Step 4: Generate analytics
+  final_analytics:
+    type: transform
+    description: Generate analytics from merged data
+    depends_on:
+      - merged_data
+
+# Schedules (similar to Airflow's schedule_interval)
+schedules:
+  - name: daily_sample_pipeline
+    cron: "0 2 * * *"  # Daily at 2 AM
+    asset_selection: "*"  # Run all assets in this pipeline

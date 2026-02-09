@@ -33,15 +33,19 @@ install: $(VENV)/bin/activate
 
 # Start Dagster development server
 # This combines both webserver and daemon (like running airflow webserver + scheduler)
+# Loads both code locations: ingestion_pipelines and data_marts
 dev:
 	@if [ ! -d "$(VENV)" ]; then \
 		echo "❌ Virtual environment not found. Run 'make install' first."; \
 		exit 1; \
 	fi
-	@echo "Starting Dagster webserver..."
+	@echo "Starting Dagster webserver with multiple code locations..."
+	@echo "  - ingestion_pipelines (data ingestion)"
+	@echo "  - data_marts (analytics aggregations)"
+	@echo ""
 	@echo "Access the UI at: http://localhost:3000"
 	@echo ""
-	$(VENV)/bin/dagster dev -m ingestion_sample
+	$(VENV)/bin/dagster dev -w workspace.yaml
 
 # Run tests
 test:
