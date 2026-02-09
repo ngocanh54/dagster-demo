@@ -4,6 +4,9 @@ dagster_home/
 .dagster/
 .dagster_storage/
 
+# Output data files
+output/
+
 # Python
 __pycache__/
 *.py[cod]

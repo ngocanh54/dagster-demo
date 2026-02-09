@@ -88,59 +88,111 @@ def raw_users(context: AssetExecutionContext) -> pd.DataFrame:
 
 ### 3. Task Dependencies & Data Passing
 
-**Airflow:**
+**This is where Dagster really shines!**
+
+In Airflow, these are **two separate concepts**:
+1. **Task dependencies** (execution order): Use `>>`
+2. **Data passing** (sharing data): Use XCom
+
+In Dagster, **they're unified**: Function parameters define both!
+
+#### Airflow Approach (Two Separate Systems):
+
 ```python
+# Part 1: Define the tasks
+def fetch_users(**context):
+    users = get_users_from_api()
+    # Push to XCom to share data
+    context['task_instance'].xcom_push(key='users', value=users)
+
 def clean_users(**context):
-    # Pull from XCom (need to know the key and task_id)
+    # Pull from XCom to get data
     ti = context['task_instance']
     users = ti.xcom_pull(task_ids='fetch_users', key='users')
 
-    # Transform data
     cleaned = transform_users(users)
-
-    # Push to XCom for next task
+    # Push for next task
     ti.xcom_push(key='cleaned_users', value=cleaned)
 
-clean_users_task = PythonOperator(
-    task_id='clean_users',
-    python_callable=clean_users,
-    dag=dag,
-)
+fetch_task = PythonOperator(task_id='fetch_users', python_callable=fetch_users, dag=dag)
+clean_task = PythonOperator(task_id='clean_users', python_callable=clean_users, dag=dag)
 
-# Define dependency
-fetch_users_task >> clean_users_task
+# Part 2: Separately define execution order with >>
+# This ONLY controls execution order, NOT data flow!
+fetch_task >> clean_task
 ```
 
-**Dagster:**
+**Problems with Airflow:**
+- ❌ Two separate systems to maintain (>> for order, XCom for data)
+- ❌ XCom keys are strings - typos cause runtime errors
+- ❌ Need to know task_ids of upstream tasks
+- ❌ No type safety - data type is unknown until runtime
+- ❌ XCom data stored in metadata DB (performance issues with large data)
+- ❌ Dependency and data flow are disconnected - hard to trace
+
+#### Dagster Approach (Unified):
+
 ```python
-@asset(deps=[raw_users])
+@asset
+def raw_users(context: AssetExecutionContext) -> pd.DataFrame:
+    """Just return the data"""
+    users = get_users_from_api()
+    return users  # That's it!
+
+@asset
 def cleaned_users(
     context: AssetExecutionContext,
-    raw_users: pd.DataFrame  # Direct parameter passing!
+    raw_users: pd.DataFrame  # ← This does BOTH:
+                             #   1. Creates dependency (runs after raw_users)
+                             #   2. Receives the data from raw_users
 ) -> pd.DataFrame:
-    """Data is passed directly as function parameters"""
-    df = raw_users.copy()
-    # Transform data
-    cleaned = transform_users(df)
-    return cleaned  # Just return it
+    """Dependencies and data flow defined in one place"""
+    cleaned = transform_users(raw_users)
+    return cleaned  # Pass to next asset
 ```
 
-**Key Differences:**
-- ✅ Dagster: Dependencies via parameters, type-safe, like regular Python
-- ❌ Airflow: XCom push/pull, need task_ids and keys, error-prone
+**How it works:**
+- The parameter `raw_users: pd.DataFrame` tells Dagster:
+  1. "This asset depends on `raw_users`" (execution order)
+  2. "Pass me the data from `raw_users`" (data flow)
+- **Both concepts unified in one declaration!**
+
+**Benefits of Dagster:**
+- ✅ One system for both dependencies and data flow
+- ✅ Type-safe: `pd.DataFrame` catches errors early
+- ✅ Works like normal Python functions
+- ✅ Automatic data lineage tracking
+- ✅ Refactoring is safe - rename the asset, parameter updates automatically
+- ✅ Easy to test - just call the function!
+
+**Example - What happens when you materialize `cleaned_users`:**
+1. Dagster sees it needs `raw_users` parameter
+2. Automatically runs `raw_users` first
+3. Takes the return value (DataFrame)
+4. Passes it to `cleaned_users` as the `raw_users` parameter
+5. Runs `cleaned_users` with that data
+
+**In Airflow, you'd have to:**
+1. Remember to use `>>` to set execution order
+2. Remember to `xcom_push` in fetch_users
+3. Remember to `xcom_pull` with correct task_id and key in clean_users
+4. Hope you didn't make any typos!
 
 ### 4. Multiple Dependencies
+
+**When a task needs data from multiple upstream tasks, the difference becomes even more clear.**
 
 **Airflow:**
 ```python
 def enrich_posts(**context):
     ti = context['task_instance']
 
-    # Pull from multiple XComs
+    # Manually pull from each upstream task's XCom
+    # Need to know exact task_ids and keys
     posts = ti.xcom_pull(task_ids='fetch_posts', key='posts')
     users = ti.xcom_pull(task_ids='clean_users', key='cleaned_users')
 
-    # Join data
+    # If someone renames a task or changes a key, this breaks!
     enriched = posts.merge(users, ...)
     ti.xcom_push(key='enriched_posts', value=enriched)
 
@@ -150,24 +202,42 @@ enrich_task = PythonOperator(
     dag=dag,
 )
 
-# Dependencies
+# Separately define that both tasks must run first
+# This ONLY controls order, not data flow!
 [fetch_posts_task, clean_users_task] >> enrich_task
 ```
 
 **Dagster:**
 ```python
-@asset(deps=[raw_posts, cleaned_users])
+@asset
 def enriched_posts(
-    raw_posts: pd.DataFrame,
-    cleaned_users: pd.DataFrame
+    raw_posts: pd.DataFrame,      # ← Depends on raw_posts, gets its data
+    cleaned_users: pd.DataFrame   # ← Depends on cleaned_users, gets its data
 ) -> pd.DataFrame:
-    """Multiple dependencies as parameters"""
+    """
+    Two parameters = two dependencies!
+    Dagster automatically:
+    1. Runs raw_posts first
+    2. Runs cleaned_users first (can run in parallel with raw_posts!)
+    3. Waits for both to complete
+    4. Passes their return values to this function
+    """
     return raw_posts.merge(cleaned_users, ...)
 ```
 
 **Key Differences:**
-- ✅ Dagster: Natural function parameters, clean and readable
-- ❌ Airflow: Multiple XCom pulls, verbose, hard to track
+- ✅ Dagster: Just list what data you need as parameters - that's it!
+- ✅ Dependencies and data flow are the same thing
+- ✅ No manual XCom management
+- ✅ Type-safe: IDE autocomplete works, type errors caught early
+- ✅ Refactor-friendly: rename `raw_posts` → automatically updates everywhere
+- ❌ Airflow: Multiple XCom pulls, verbose, error-prone, hard to track
+
+**The Power of This Approach:**
+When you write `enriched_posts(raw_posts, cleaned_users)`, you're telling Dagster:
+- "I need the data from raw_posts and cleaned_users"
+- Dagster figures out: "I need to run those assets first and pass their results"
+- **The data flow IS the dependency graph!**
 
 ### 5. Parallel Execution
 
