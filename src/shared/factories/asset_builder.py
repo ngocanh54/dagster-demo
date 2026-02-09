@@ -34,6 +34,7 @@ from pathlib import Path
 from dagster import (
     asset,
     AssetExecutionContext,
+    AssetIn,
     AssetSelection,
     Output,
     MetadataValue,
@@ -106,68 +107,65 @@ class AssetBuilder:
         description = asset_config.get('description', f'Transform data for {asset_name}')
         sql_file = asset_config.get('sql_file')
 
-        # Build function signature dynamically based on dependencies
-        def make_transform_asset():
-            if dependencies:
-                # Asset has dependencies - add them as parameters
-                dep_names = [dep.key.path[0] for dep in dependencies]
+        if dependencies:
+            # Asset has dependencies - explicitly declare them with ins parameter
+            dep_names = [dep.key.path[0] for dep in dependencies]
 
-                @asset(name=asset_name, description=description)
-                def transform_asset(context: AssetExecutionContext, **kwargs) -> Output[pd.DataFrame]:
-                    context.log.info(f"Transforming data for {asset_name}")
+            # Create ins mapping for explicit dependency declaration
+            ins = {name: AssetIn(key=name) for name in dep_names}
 
-                    # Get upstream data
-                    upstream_dfs = {name: kwargs[name] for name in dep_names}
+            @asset(name=asset_name, description=description, ins=ins)
+            def transform_asset(context: AssetExecutionContext, **kwargs) -> Output[pd.DataFrame]:
+                context.log.info(f"Transforming data for {asset_name}")
 
-                    # If SQL file provided, execute it (simplified - just demonstrate pattern)
-                    if sql_file:
-                        context.log.info(f"Would execute SQL from {sql_file}")
-                        # In real implementation, you'd execute the SQL here
-                        # For demo, just merge upstream data
-                        df = pd.concat(upstream_dfs.values(), ignore_index=True)
-                    else:
-                        # Simple merge of upstream dataframes
-                        df = pd.concat(upstream_dfs.values(), ignore_index=True)
+                # Get upstream data from named parameters
+                upstream_dfs = list(kwargs.values())
 
-                    # Save to CSV
-                    csv_path = os.path.join(self.output_dir, f"{asset_name}.csv")
-                    df.to_csv(csv_path, index=False)
+                # If SQL file provided, execute it (simplified - just demonstrate pattern)
+                if sql_file:
+                    context.log.info(f"Would execute SQL from {sql_file}")
+                    # In real implementation, you'd execute the SQL here
+                    # For demo, just merge upstream data
+                    df = pd.concat(upstream_dfs, ignore_index=True)
+                else:
+                    # Simple merge of upstream dataframes
+                    df = pd.concat(upstream_dfs, ignore_index=True)
 
-                    return Output(
-                        value=df,
-                        metadata={
-                            "num_records": len(df),
-                            "csv_path": csv_path,
-                            "preview": MetadataValue.md(df.head(5).to_markdown()),
-                        }
-                    )
+                # Save to CSV
+                csv_path = os.path.join(self.output_dir, f"{asset_name}.csv")
+                df.to_csv(csv_path, index=False)
 
-                # Manually set dependencies by modifying the asset's input definitions
-                # This is a simplified version - in production you'd use deps parameter
-                return transform_asset
-            else:
-                # No dependencies
-                @asset(name=asset_name, description=description)
-                def transform_asset(context: AssetExecutionContext) -> Output[pd.DataFrame]:
-                    context.log.info(f"Transforming data for {asset_name}")
+                return Output(
+                    value=df,
+                    metadata={
+                        "num_records": len(df),
+                        "csv_path": csv_path,
+                        "preview": MetadataValue.md(df.head(5).to_markdown()),
+                    }
+                )
 
-                    # Create empty dataframe
-                    df = pd.DataFrame()
+            return transform_asset
+        else:
+            # No dependencies
+            @asset(name=asset_name, description=description)
+            def transform_asset(context: AssetExecutionContext) -> Output[pd.DataFrame]:
+                context.log.info(f"Transforming data for {asset_name}")
 
-                    csv_path = os.path.join(self.output_dir, f"{asset_name}.csv")
-                    df.to_csv(csv_path, index=False)
+                # Create empty dataframe
+                df = pd.DataFrame()
 
-                    return Output(
-                        value=df,
-                        metadata={
-                            "num_records": len(df),
-                            "csv_path": csv_path,
-                        }
-                    )
+                csv_path = os.path.join(self.output_dir, f"{asset_name}.csv")
+                df.to_csv(csv_path, index=False)
 
-                return transform_asset
+                return Output(
+                    value=df,
+                    metadata={
+                        "num_records": len(df),
+                        "csv_path": csv_path,
+                    }
+                )
 
-        return make_transform_asset()
+            return transform_asset
 
     def build_assets(self) -> List[Any]:
         """
