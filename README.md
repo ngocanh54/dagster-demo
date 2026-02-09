@@ -26,18 +26,19 @@ dagster_demo/
 ├── src/
 │   ├── ingestion_pipelines/         # Code Location 1: Raw data ingestion (YAML)
 │   │   ├── definitions.py          # Loads YAML pipelines
-│   │   └── config/                 # YAML pipeline configs (with schedules)
-│   │       ├── sample_pipeline.yaml
-│   │       └── albums_pipeline.yaml
+│   │   └── config/                 # YAML pipeline configs
+│   │       ├── sample_pipeline.yaml     # Todos + comments (with schedule)
+│   │       └── albums_pipeline.yaml     # Albums + photos (with schedule)
 │   │
-│   ├── data_marts/                 # Code Location 2: Analytics marts (Python)
-│   │   ├── definitions.py          # Loads Python assets
-│   │   └── assets.py               # Mart transformations
+│   ├── data_marts/                 # Code Location 2: Analytics marts (YAML)
+│   │   ├── definitions.py          # Loads YAML pipelines
+│   │   └── config/                 # YAML pipeline configs
+│   │       └── marts.yaml               # Data mart transformations (with sources)
 │   │
 │   └── shared/                     # Shared utilities
 │       └── factories/              # Factory pattern (like Airflow's plugins/)
 │           ├── __init__.py
-│           └── asset_builder.py   # YAML → Assets + Schedules
+│           └── asset_builder.py   # YAML → Assets + Schedules + SourceAssets
 │
 ├── workspace.yaml                  # Defines both code locations
 ├── Makefile                        # Common commands
@@ -80,7 +81,7 @@ schedules:
 
 Like having separate DAG folders in Airflow:
 - **`ingestion_pipelines`**: Raw data ingestion (YAML-defined)
-- **`data_marts`**: Analytics transformations (Python)
+- **`data_marts`**: Analytics transformations (YAML-defined with SourceAssets)
 
 ### 3. Cross-Code-Location Dependencies
 
@@ -156,26 +157,37 @@ make dev
 
 ### Supported Asset Types
 
+#### `sources` (External Assets)
+Declare assets from other code locations.
+
+```yaml
+sources:
+  - raw_data_from_other_location
+  - another_external_asset
+```
+
 #### `api_fetch`
 Fetches data from HTTP endpoint, saves as CSV.
 
 ```yaml
-asset_name:
-  type: api_fetch
-  url: https://api.example.com/endpoint
-  description: What this fetches
+assets:
+  asset_name:
+    type: api_fetch
+    url: https://api.example.com/endpoint
+    description: What this fetches
 ```
 
 #### `transform`
 Transforms or combines upstream data.
 
 ```yaml
-asset_name:
-  type: transform
-  description: What this does
-  depends_on:
-    - upstream_asset_1
-    - upstream_asset_2
+assets:
+  asset_name:
+    type: transform
+    description: What this does
+    depends_on:
+      - upstream_asset_1
+      - upstream_asset_2
 ```
 
 ### Schedules in YAML

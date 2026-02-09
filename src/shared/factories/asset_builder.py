@@ -5,6 +5,12 @@ This module provides a factory for dynamically creating Dagster assets and sched
 similar to how Airflow's plugins/dagbuilder.py creates DAGs from config files.
 
 Example YAML structure:
+    # Optional: Declare external assets from other code locations
+    sources:
+      - raw_data_from_other_location
+      - another_external_asset
+
+    # Define assets in this pipeline
     assets:
       raw_data:
         type: api_fetch
@@ -13,11 +19,11 @@ Example YAML structure:
 
       processed_data:
         type: transform
-        sql_file: queries/transform.sql
         depends_on:
           - raw_data
         description: Transform raw data
 
+    # Optional: Define schedules
     schedules:
       - name: daily_refresh
         cron: "0 2 * * *"
@@ -39,6 +45,7 @@ from dagster import (
     Output,
     MetadataValue,
     ScheduleDefinition,
+    SourceAsset,
     define_asset_job,
 )
 
@@ -175,6 +182,24 @@ class AssetBuilder:
 
             return transform_asset
 
+    def build_source_assets(self) -> List[SourceAsset]:
+        """
+        Build source assets from the 'sources' section in YAML.
+
+        Sources are external assets from other code locations.
+
+        Returns:
+            List of SourceAsset definitions
+        """
+        sources_config = self.config.get('sources', [])
+        source_assets = []
+
+        for source_name in sources_config:
+            source_asset = SourceAsset(key=source_name)
+            source_assets.append(source_asset)
+
+        return source_assets
+
     def build_assets(self) -> List[Any]:
         """
         Build all assets defined in the YAML configuration.
@@ -255,19 +280,25 @@ class AssetBuilder:
 
     def build_all(self) -> Dict[str, Any]:
         """
-        Build both assets and schedules from YAML.
+        Build source assets, assets, and schedules from YAML.
 
         Returns:
             Dictionary with 'assets', 'schedules', and 'jobs' keys
         """
+        source_assets = self.build_source_assets()
         assets = self.build_assets()
+
+        # Combine source assets and regular assets
+        all_assets = source_assets + assets
+
+        # Build schedules (only for non-source assets)
         schedules = self.build_schedules(assets)
 
         # Extract jobs from schedules
         jobs = [schedule.job for schedule in schedules] if schedules else []
 
         return {
-            'assets': assets,
+            'assets': all_assets,
             'schedules': schedules,
             'jobs': jobs,
         }

@@ -1,0 +1,29 @@
+# Data Marts - YAML-defined analytics marts
+#
+# This demonstrates cross-code-location dependencies using the factory pattern.
+# Sources are external assets from ingestion_pipelines.
+
+# Declare external assets from ingestion_pipelines code location
+sources:
+  - raw_todos
+  - raw_comments
+  - raw_albums
+  - raw_photos
+
+# Define data mart assets
+assets:
+  # User activity mart - combines todos and comments
+  user_activity_mart:
+    type: transform
+    description: User activity analytics mart combining todos and comments data
+    depends_on:
+      - raw_todos
+      - raw_comments
+
+  # Album engagement mart - combines albums and photos
+  album_engagement_mart:
+    type: transform
+    description: Album engagement analytics mart combining albums and photos data
+    depends_on:
+      - raw_albums
+      - raw_photos
