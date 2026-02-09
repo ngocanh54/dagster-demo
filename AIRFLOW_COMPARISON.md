@@ -366,6 +366,34 @@ open http://localhost:3000
 # Click "Materialize all" in the UI
 ```
 
+**Dagster Option 1 - YAML (same pattern):**
+```yaml
+assets:
+  revenue:
+    type: bigquery_query
+    sql: revenue.sql
+  revenue__ratio_change:
+    type: bigquery_alert
+    args:
+      alert_type: ratio_change
+      threshold: 0.05
+    depends_on:
+      - revenue
+```
+
+**Dagster Option 2 - Python (recommended):**
+```python
+@asset
+def revenue(context):
+    return run_sql_file("revenue.sql")
+
+@asset
+def revenue__ratio_change(context, revenue):  # Lineage automatic!
+    return check_ratio_change(revenue, threshold=0.05)
+```
+
+**Both work! Choose based on your team's preference.**
+
 ## Key Takeaways for Airflow Users
 
 1. **Think Data, Not Tasks**: Focus on what data you're creating, not the steps
@@ -374,17 +402,5 @@ open http://localhost:3000
 4. **Easy Testing**: Assets are just Python functions
 5. **Better DX**: No Docker needed for local development
 6. **Automatic Lineage**: Dagster tracks what creates what automatically
-
-## When to Use Each
-
-**Use Airflow when:**
-- You have existing Airflow infrastructure
-- Your team is heavily invested in Airflow
-- You need very specific Airflow operators
-
-**Use Dagster when:**
-- Starting a new project
-- You want better developer experience
-- Type safety and testing are important
-- You work with data assets (tables, models, reports)
-- You want automatic lineage tracking
+7. **YAML Pipelines**: You CAN define pipelines via YAML in Dagster, but Python is recommended
+8. **Lineage Options**: Explicit (YAML `depends_on`) or Implicit (Python parameters)
