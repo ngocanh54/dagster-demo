@@ -25,11 +25,17 @@ make dev
 ├── README.md             # This file
 ├── pyproject.toml        # Python project config and dependencies
 ├── src/
-│   └── my_project/
+│   └── ingestion_sample/
 │       ├── __init__.py
 │       ├── definitions.py    # Main Dagster definitions (like DAGs in Airflow)
 │       └── defs/            # Directory for organizing assets, jobs, etc.
-│           └── __init__.py
+│           ├── __init__.py
+│           ├── assets.py     # Data asset definitions
+│           └── schedules.py  # Schedule definitions
+├── output/               # Data output directory
+│   ├── raw_users.csv
+│   ├── posts_analytics.csv
+│   └── ...
 └── tests/
     └── __init__.py
 ```
@@ -120,7 +126,7 @@ with DAG('sample_dag', ...):
 ### Example: Adding a New Asset
 
 ```python
-# In src/my_project/definitions.py
+# In src/ingestion_sample/definitions.py
 
 @asset
 def raw_data():

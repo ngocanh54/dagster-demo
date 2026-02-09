@@ -340,14 +340,23 @@ dags/
 
 **Dagster:**
 ```
-src/my_project/
-├── definitions.py          # Entry point
-├── defs/
-│   ├── assets.py          # Asset definitions
-│   ├── schedules.py       # Schedules
-│   └── resources.py       # Resources (optional)
-└── config/                 # Configuration (optional)
-    └── sources.yaml
+.
+├── Makefile
+├── pyproject.toml
+├── src/
+│   └── ingestion_sample/
+│       ├── __init__.py
+│       ├── definitions.py      # Entry point
+│       └── defs/
+│           ├── __init__.py
+│           ├── assets.py       # Asset definitions
+│           └── schedules.py    # Schedule definitions
+├── output/                     # Data output directory
+│   ├── raw_users.csv
+│   ├── posts_analytics.csv
+│   └── ...
+└── tests/
+    └── __init__.py
 ```
 
 ## Running the Pipeline
