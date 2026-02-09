@@ -32,6 +32,7 @@ raw_photos_source = SourceAsset(key="raw_photos")
 
 @asset(
     description="User analytics mart - aggregates user and post data",
+    group_name="data_marts",
     # Depends on raw_todos and raw_comments from ingestion_pipelines
     ins={
         "raw_todos": AssetIn(key="raw_todos"),
@@ -95,6 +96,7 @@ def user_activity_mart(
 
 @asset(
     description="Album engagement mart - analyzes album and photo data",
+    group_name="data_marts",
     ins={
         "raw_albums": AssetIn(key="raw_albums"),
         "raw_photos": AssetIn(key="raw_photos"),

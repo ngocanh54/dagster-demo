@@ -50,19 +50,27 @@ class AssetBuilder:
     Similar to Airflow's DagBuilder pattern where you define entire pipelines in YAML.
     """
 
-    def __init__(self, config_path: str, output_dir: str = "output"):
+    def __init__(self, config_path: str, output_dir: str = "output", group_name: Optional[str] = None):
         """
         Initialize the AssetBuilder.
 
         Args:
             config_path: Path to YAML configuration file
             output_dir: Directory for output files (default: output/)
+            group_name: Optional group name for organizing assets (default: derived from filename)
         """
         self.config_path = config_path
         self.output_dir = output_dir
 
         with open(config_path, 'r') as f:
             self.config = yaml.safe_load(f)
+
+        # Derive group name from config filename if not provided
+        if group_name is None:
+            filename = Path(config_path).stem  # e.g., "sample_pipeline" from "sample_pipeline.yaml"
+            self.group_name = filename
+        else:
+            self.group_name = group_name
 
         # Ensure output directory exists
         os.makedirs(output_dir, exist_ok=True)
@@ -72,7 +80,7 @@ class AssetBuilder:
         url = asset_config['url']
         description = asset_config.get('description', f'Fetch data from {url}')
 
-        @asset(name=asset_name, description=description)
+        @asset(name=asset_name, description=description, group_name=self.group_name)
         def api_fetch_asset(context: AssetExecutionContext) -> Output[pd.DataFrame]:
             context.log.info(f"Fetching data from {url}")
             response = requests.get(url)
@@ -114,7 +122,7 @@ class AssetBuilder:
             # Create ins mapping for explicit dependency declaration
             ins = {name: AssetIn(key=name) for name in dep_names}
 
-            @asset(name=asset_name, description=description, ins=ins)
+            @asset(name=asset_name, description=description, ins=ins, group_name=self.group_name)
             def transform_asset(context: AssetExecutionContext, **kwargs) -> Output[pd.DataFrame]:
                 context.log.info(f"Transforming data for {asset_name}")
 
@@ -147,7 +155,7 @@ class AssetBuilder:
             return transform_asset
         else:
             # No dependencies
-            @asset(name=asset_name, description=description)
+            @asset(name=asset_name, description=description, group_name=self.group_name)
             def transform_asset(context: AssetExecutionContext) -> Output[pd.DataFrame]:
                 context.log.info(f"Transforming data for {asset_name}")
 
