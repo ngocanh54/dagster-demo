@@ -83,12 +83,12 @@ def raw_users(context: AssetExecutionContext) -> pd.DataFrame:
 ```
 
 **Key Differences:**
-- ✅ Dagster: Type hints, direct returns, no XCom needed
-- ❌ Airflow: XCom push/pull, untyped, stored in metadata DB
+- Dagster: Type hints, direct returns, no XCom needed
+- Airflow: XCom push/pull, untyped, stored in metadata DB
 
 ### 3. Task Dependencies & Data Passing
 
-**This is where Dagster really shines!**
+**Key difference between the two approaches:**
 
 In Airflow, these are **two separate concepts**:
 1. **Task dependencies** (execution order): Use `>>`
@@ -122,13 +122,13 @@ clean_task = PythonOperator(task_id='clean_users', python_callable=clean_users, 
 fetch_task >> clean_task
 ```
 
-**Problems with Airflow:**
-- ❌ Two separate systems to maintain (>> for order, XCom for data)
-- ❌ XCom keys are strings - typos cause runtime errors
-- ❌ Need to know task_ids of upstream tasks
-- ❌ No type safety - data type is unknown until runtime
-- ❌ XCom data stored in metadata DB (performance issues with large data)
-- ❌ Dependency and data flow are disconnected - hard to trace
+**Airflow approach characteristics:**
+- Two separate systems to maintain (>> for order, XCom for data)
+- XCom keys are strings - typos cause runtime errors
+- Need to know task_ids of upstream tasks
+- No type safety - data type is unknown until runtime
+- XCom data stored in metadata DB (performance issues with large data)
+- Dependency and data flow are disconnected - hard to trace
 
 #### Dagster Approach (Unified):
 
@@ -157,13 +157,13 @@ def cleaned_users(
   2. "Pass me the data from `raw_users`" (data flow)
 - **Both concepts unified in one declaration!**
 
-**Benefits of Dagster:**
-- ✅ One system for both dependencies and data flow
-- ✅ Type-safe: `pd.DataFrame` catches errors early
-- ✅ Works like normal Python functions
-- ✅ Automatic data lineage tracking
-- ✅ Refactoring is safe - rename the asset, parameter updates automatically
-- ✅ Easy to test - just call the function!
+**Dagster approach characteristics:**
+- One system for both dependencies and data flow
+- Type-safe: `pd.DataFrame` catches errors early
+- Works like normal Python functions
+- Automatic data lineage tracking
+- Refactoring is safe - rename the asset, parameter updates automatically
+- Easy to test - just call the function!
 
 **Example - What happens when you materialize `cleaned_users`:**
 1. Dagster sees it needs `raw_users` parameter
@@ -226,12 +226,12 @@ def enriched_posts(
 ```
 
 **Key Differences:**
-- ✅ Dagster: Just list what data you need as parameters - that's it!
-- ✅ Dependencies and data flow are the same thing
-- ✅ No manual XCom management
-- ✅ Type-safe: IDE autocomplete works, type errors caught early
-- ✅ Refactor-friendly: rename `raw_posts` → automatically updates everywhere
-- ❌ Airflow: Multiple XCom pulls, verbose, error-prone, hard to track
+- Dagster: Just list what data you need as parameters - that's it!
+- Dependencies and data flow are the same thing
+- No manual XCom management
+- Type-safe: IDE autocomplete works, type errors caught early
+- Refactor-friendly: rename `raw_posts` → automatically updates everywhere
+- Airflow: Multiple XCom pulls, verbose, error-prone, hard to track
 
 **The Power of This Approach:**
 When you write `enriched_posts(raw_posts, cleaned_users)`, you're telling Dagster:
@@ -263,8 +263,8 @@ def raw_posts() -> pd.DataFrame: ...
 ```
 
 **Key Differences:**
-- ✅ Both handle parallel execution similarly
-- ✅ Dagster shows parallelism visually in the lineage graph
+- Both handle parallel execution similarly
+- Dagster shows parallelism visually in the lineage graph
 
 ### 6. Testing
 
@@ -303,8 +303,8 @@ def test_cleaned_users():
 ```
 
 **Key Differences:**
-- ✅ Dagster: Test like regular Python functions
-- ❌ Airflow: Complex mocking, XCom, context, TaskInstance
+- Dagster: Test like regular Python functions
+- Airflow: Complex mocking, XCom, context, TaskInstance
 
 ## Summary Table
 
@@ -312,13 +312,13 @@ def test_cleaned_users():
 |---------|---------|---------|
 | **Data Passing** | XCom (untyped, DB-stored) | Function parameters (type-safe) |
 | **Dependencies** | `>>` operator + XCom pulls | Function parameters |
-| **Type Safety** | ❌ No | ✅ Yes |
-| **Testing** | ❌ Complex (mocking) | ✅ Simple (pure functions) |
-| **Local Dev** | ❌ Needs Docker/DB | ✅ Just Python |
-| **Lineage** | ❌ Manual | ✅ Automatic |
+| **Type Safety** | No | Yes |
+| **Testing** | Complex (mocking) | Simple (pure functions) |
+| **Local Dev** | Needs Docker/DB | Just Python |
+| **Lineage** | Manual | Automatic |
 | **Code Style** | Imperative (how to do it) | Declarative (what to produce) |
 | **Learning Curve** | Higher | Lower (for Python devs) |
-| **Data-Centric** | ❌ Task-centric | ✅ Asset-centric |
+| **Data-Centric** | Task-centric | Asset-centric |
 
 ## File Structure Comparison
 
@@ -394,13 +394,54 @@ def revenue__ratio_change(context, revenue):  # Lineage automatic!
 
 **Both work! Choose based on your team's preference.**
 
-## Key Takeaways for Airflow Users
+## Key Differences Summary
 
-1. **Think Data, Not Tasks**: Focus on what data you're creating, not the steps
-2. **No XCom Needed**: Data passes naturally through function parameters
-3. **Type Safety**: Catch errors at development time, not runtime
-4. **Easy Testing**: Assets are just Python functions
-5. **Better DX**: No Docker needed for local development
-6. **Automatic Lineage**: Dagster tracks what creates what automatically
-7. **YAML Pipelines**: You CAN define pipelines via YAML in Dagster, but Python is recommended
-8. **Lineage Options**: Explicit (YAML `depends_on`) or Implicit (Python parameters)
+1. **Mental Model**:
+   - Airflow: Task-centric (focus on execution steps)
+   - Dagster: Asset-centric (focus on data products)
+
+2. **Data Passing**:
+   - Airflow: XCom (push/pull pattern, stored in metadata DB)
+   - Dagster: Function parameters (direct passing, type-safe)
+
+3. **Dependencies**:
+   - Airflow: Two systems - `>>` for order, XCom for data
+   - Dagster: Unified - function parameters define both
+
+4. **Testing**:
+   - Airflow: Requires mocking context, XCom, TaskInstance
+   - Dagster: Test assets like regular Python functions
+
+5. **Local Development**:
+   - Airflow: Typically requires Docker for full setup
+   - Dagster: Runs with just Python (`make dev`)
+
+6. **Lineage**:
+   - Airflow: Implicit from `>>` operators, manual for data flow
+   - Dagster: Automatic from function parameters or explicit in YAML
+
+7. **YAML Configuration**:
+   - Airflow: Common pattern for defining entire DAG structure
+   - Dagster: Possible with custom factory, but Python is standard
+
+8. **Type Safety**:
+   - Airflow: Untyped (runtime discovery)
+   - Dagster: Typed (compile-time checking when using Python)
+
+## Choosing an Approach
+
+Both frameworks are capable orchestration tools. Consider:
+
+**Airflow may fit better if:**
+- You have existing Airflow infrastructure
+- Your team is familiar with Airflow patterns
+- You prefer YAML-defined pipeline structures
+- You need specific Airflow operators or integrations
+
+**Dagster may fit better if:**
+- You're starting a new project
+- Type safety and IDE support are priorities
+- You prefer Python over YAML for pipeline definitions
+- Asset-centric thinking aligns with your use case
+
+**For exploration:** Try both with a sample pipeline to see which mental model fits your team better.
