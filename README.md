@@ -18,7 +18,7 @@ make dev
 
 If you are using Windows, start with this guide:
 
-- [`WINDOWS_FRIEND_GUIDE.md`](WINDOWS_FRIEND_GUIDE.md)
+- [`WINDOWS_SETUP_GUIDE.md`](WINDOWS_SETUP_GUIDE.md)
 
 ## 🪟 Running on Windows
 
