@@ -14,6 +14,12 @@ make dev
 # Access UI at http://localhost:3000
 ```
 
+## 👋 Non-Technical Windows Setup
+
+If your friend is not technical, send this guide first:
+
+- [`WINDOWS_FRIEND_GUIDE.md`](WINDOWS_FRIEND_GUIDE.md)
+
 ## 🪟 Running on Windows
 
 Recommended: use **WSL2 (Ubuntu)** for the smoothest experience.
