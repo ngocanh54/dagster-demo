@@ -1,6 +1,11 @@
 # Azure Deployment Plan (Simple: One `prod` Environment)
 
-## Quick Deployment Flow (Azure VM)
+## Quick Deployment Flows
+
+Current implementation target: **Section 1 (Azure VM)**.  
+Future reference: **Section 2 (AKS)**.
+
+### Section 1: Azure VM (Current)
 
 ```mermaid
 flowchart TB
@@ -33,6 +38,54 @@ flowchart TB
     end
 ```
 
+### Section 2: AKS (Future)
+
+```mermaid
+flowchart TB
+    subgraph DEV["Team and Source Control"]
+        A[Data and engineering team]
+        B[GitHub repository]
+        A -->|Push code to main| B
+    end
+
+    subgraph CICD["CI/CD (GitHub Actions)"]
+        C[ci.yml<br/>Run tests and build check]
+        D[deploy-prod.yml<br/>Build and deploy to prod]
+        E[Docker image build]
+        F[Push image to Azure Container Registry]
+        B --> C
+        B --> D
+        D --> E --> F
+    end
+
+    subgraph AZURE["Azure Infrastructure (prod)"]
+        G[AKS cluster]
+        G1[Kubernetes workloads<br/>dagster-webserver dagster-daemon dagster-user-code]
+        H[Azure PostgreSQL<br/>Dagster metadata]
+        I[Azure Key Vault<br/>API credentials]
+        J[Log Analytics<br/>Application logs]
+        F --> G --> G1
+        G1 --> H
+        G1 --> I
+        G1 --> J
+    end
+```
+
+## VM vs AKS: What Actually Changes
+
+| Area | Azure VM | AKS |
+|---|---|---|
+| Deployment method | SSH to VM and run Docker Compose | Deploy with Kubernetes manifests or Helm |
+| Core runtime objects | VM + Docker containers | Cluster + node pools + pods + services |
+| Scaling approach | Mostly manual, usually vertical | Horizontal scaling with replicas and autoscaling |
+| High availability | Limited on single VM unless extra setup | Better built-in multi-replica patterns |
+| Secrets integration | Inject into VM/container runtime | Kubernetes Secrets or Key Vault CSI driver |
+| Networking | VM ports, NSG rules, optional reverse proxy | Ingress controller, load balancer, service routing |
+| Rollouts | Restart/update containers on VM | Rolling updates and rollout controls |
+| Operations overhead | Lower to start, simpler for small teams | Higher complexity, better for larger scale |
+| Cost profile | Usually cheaper at small scale | More overhead, pays off with scale/reliability needs |
+| Best fit | Early stage, simple production setup | Mature platform team, larger workloads |
+
 ## 1) Goal
 
 Start with the easiest stable setup for a data/business-focused team:
@@ -43,9 +96,9 @@ Start with the easiest stable setup for a data/business-focused team:
 
 You can add `dev/staging` later after the team is comfortable.
 
-## 2) Minimal Azure Architecture
+## 2) Minimal Azure Architecture (Current Plan)
 
-Use these services:
+Use these services for the current VM-based rollout:
 
 1. `Azure VM` (Docker Compose)
 - Run `dagster-webserver`, `dagster-daemon`, and `dagster-user-code`
@@ -100,7 +153,7 @@ dagster_demo/
 
 No modules initially. Keep everything in `infra/terraform/prod` until team maturity increases.
 
-## 5) Simple CI/CD Flow
+## 5) Simple CI/CD Flow (Current Plan)
 
 ### A) `ci.yml` (on Pull Request)
 
@@ -176,6 +229,6 @@ Notebook sections:
 Later, add:
 1. `dev` environment
 2. `staging` environment
-3. Move deployment target to AKS (Kubernetes)
+3. Move deployment target to AKS (Section 2 flow above)
 4. Full Terraform CI/CD
 5. Approval gates and release promotion
