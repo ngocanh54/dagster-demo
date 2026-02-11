@@ -1,5 +1,38 @@
 # Azure Deployment Plan (Simple: One `prod` Environment)
 
+## Quick Deployment Flow (Azure VM)
+
+```mermaid
+flowchart TB
+    subgraph DEV["Team and Source Control"]
+        A[Data and engineering team]
+        B[GitHub repository]
+        A -->|Push code to main| B
+    end
+
+    subgraph CICD["CI/CD (GitHub Actions)"]
+        C[ci.yml<br/>Run tests and build check]
+        D[deploy-prod.yml<br/>Build and deploy to prod]
+        E[Docker image build]
+        F[Push image to Azure Container Registry]
+        B --> C
+        B --> D
+        D --> E --> F
+    end
+
+    subgraph AZURE["Azure Infrastructure (prod)"]
+        G[Azure VM]
+        G1[Docker Compose<br/>dagster-webserver dagster-daemon dagster-user-code]
+        H[Azure PostgreSQL<br/>Dagster metadata]
+        I[Azure Key Vault<br/>API credentials]
+        J[Log Analytics<br/>Application logs]
+        F --> G --> G1
+        G1 --> H
+        G1 --> I
+        G1 --> J
+    end
+```
+
 ## 1) Goal
 
 Start with the easiest stable setup for a data/business-focused team:
@@ -14,10 +47,8 @@ You can add `dev/staging` later after the team is comfortable.
 
 Use these services:
 
-1. `Azure Container Apps`
-- Run `dagster-webserver`
-- Run `dagster-daemon`
-- Run one `dagster-user-code` app
+1. `Azure VM` (Docker Compose)
+- Run `dagster-webserver`, `dagster-daemon`, and `dagster-user-code`
 
 2. `Azure Database for PostgreSQL`
 - Dagster run/event/schedule metadata
@@ -87,7 +118,7 @@ Steps:
 1. Build image
 2. Tag image with commit SHA
 3. Push image to ACR
-4. Deploy/update Container Apps in `prod`
+4. Deploy/update Docker Compose on Azure VM in `prod`
 5. Run quick smoke check (Dagster UI reachable)
 
 Keep this linear and simple. Avoid multi-env promotion for now.
@@ -136,7 +167,7 @@ Notebook sections:
 1. Containerize app locally and verify
 2. Provision Azure resources in `prod`
 3. Add Key Vault secrets
-4. Deploy from GitHub Actions to Container Apps
+4. Deploy from GitHub Actions to Azure VM
 5. Run Dagster once and validate via query + notebook
 6. Document normal runbook for the team
 
@@ -145,5 +176,6 @@ Notebook sections:
 Later, add:
 1. `dev` environment
 2. `staging` environment
-3. Full Terraform CI/CD
-4. Approval gates and release promotion
+3. Move deployment target to AKS (Kubernetes)
+4. Full Terraform CI/CD
+5. Approval gates and release promotion
