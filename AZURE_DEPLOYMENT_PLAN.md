@@ -1,11 +1,9 @@
 # Azure Deployment Plan (Simple: One `prod` Environment)
 
-## Quick Deployment Flows
+## Quick Deployment Flow
 
-Current implementation target: **Section 1 (Azure VM)**.  
-Future reference: **Section 2 (AKS)**.
-
-### Section 1: Azure VM (Current)
+Current implementation target: **Azure VM**.  
+Future reference: **AKS**.
 
 ```mermaid
 flowchart TB
@@ -26,45 +24,13 @@ flowchart TB
     end
 
     subgraph AZURE["Azure Infrastructure (prod)"]
-        G[Azure VM]
-        G1[Docker Compose<br/>dagster-webserver dagster-daemon dagster-user-code]
+        G1[Azure VM/AKS cluster<br/>Docker Compose/Kubernetes workloads]
+
         H[Azure PostgreSQL<br/>Dagster metadata]
         I[Azure Key Vault<br/>API credentials]
         J[Log Analytics<br/>Application logs]
-        F --> G --> G1
-        G1 --> H
-        G1 --> I
-        G1 --> J
-    end
-```
 
-### Section 2: AKS (Future)
-
-```mermaid
-flowchart TB
-    subgraph DEV["Team and Source Control"]
-        A[Data and engineering team]
-        B[GitHub repository]
-        A -->|Push code to main| B
-    end
-
-    subgraph CICD["CI/CD (GitHub Actions)"]
-        C[ci.yml<br/>Run tests and build check]
-        D[deploy-prod.yml<br/>Build and deploy to prod]
-        E[Docker image build]
-        F[Push image to Azure Container Registry]
-        B --> C
-        B --> D
-        D --> E --> F
-    end
-
-    subgraph AZURE["Azure Infrastructure (prod)"]
-        G[AKS cluster]
-        G1[Kubernetes workloads<br/>dagster-webserver dagster-daemon dagster-user-code]
-        H[Azure PostgreSQL<br/>Dagster metadata]
-        I[Azure Key Vault<br/>API credentials]
-        J[Log Analytics<br/>Application logs]
-        F --> G --> G1
+        F --> G1
         G1 --> H
         G1 --> I
         G1 --> J
