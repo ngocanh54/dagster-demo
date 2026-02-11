@@ -4,56 +4,46 @@ This guide is for trying the demo with as little setup as possible.
 
 ## What you will do
 
-1. Install 3 things (Git, Python, Make)
+1. Install Git + WSL
 2. Download this repo
 3. Run 2 commands
 4. Open Dagster in your browser
 
 Total time: about 15-25 minutes.
 
-## Step 1: Install required apps
+## Step 1: Install required apps (recommended path)
 
 Install these in this order:
 
 1. Git for Windows
-2. Python 3.10 or newer
-3. Chocolatey (only if you do not already have it)
-4. Make (with Chocolatey)
+2. WSL (Windows Subsystem for Linux)
 
 ### 1) Install Git for Windows
 
 - Download: https://git-scm.com/download/win
 - Keep default options during install.
 
-### 2) Install Python
-
-- Download: https://www.python.org/downloads/windows/
-- Important: check the box `Add python.exe to PATH` during installation.
-
-### 3) Install Chocolatey (if needed)
+### 2) Install WSL
 
 - Open **PowerShell as Administrator**
-- Follow the official instructions here: https://chocolatey.org/install
-
-### 4) Install Make
-
-In the same PowerShell window:
+- Run:
 
 ```powershell
-choco install make -y
+wsl --install
 ```
 
-## Step 2: Open Git Bash
+- Restart your computer if prompted.
+- Open the `Ubuntu` app and finish first-time setup.
+
+## Step 2: Open Ubuntu (WSL)
 
 - Press Start
-- Search for `Git Bash`
+- Search for `Ubuntu`
 - Open it
-
-You should see a black terminal window.
 
 ## Step 3: Download this project
 
-In Git Bash, run:
+In Ubuntu terminal, run:
 
 ```bash
 git clone <REPO_URL>
@@ -104,7 +94,7 @@ That confirms the demo is working.
 
 ## If something fails
 
-Run these checks in Git Bash and send me the output:
+Run these checks in Ubuntu terminal and send me the output:
 
 ```bash
 python --version
@@ -119,3 +109,11 @@ make windows-guide
 ```
 
 Copy the full output and send it to me.
+
+## Optional: Native Windows path (advanced)
+
+If she does not want WSL, then she needs:
+- Python 3.10+
+- GNU Make on Windows (Chocolatey is one way to install it)
+
+Chocolatey is only for this native Windows path. It is not required if using WSL.
