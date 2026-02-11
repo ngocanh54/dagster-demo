@@ -14,6 +14,41 @@ make dev
 # Access UI at http://localhost:3000
 ```
 
+## 🪟 Running on Windows
+
+Recommended: use **WSL2 (Ubuntu)** for the smoothest experience.
+
+### Option A: WSL2 (recommended)
+
+```bash
+# In WSL terminal
+git clone <your-repo-url>
+cd dagster_demo
+make install
+make dev
+```
+
+Then open `http://localhost:3000` in your Windows browser.
+
+### Option B: Native Windows (PowerShell or Git Bash)
+
+1. Install Python 3.10+ (check "Add python.exe to PATH")
+2. Install GNU Make (`choco install make`) or run from Git Bash
+3. Clone and run:
+
+```bash
+git clone <your-repo-url>
+cd dagster_demo
+make install
+make dev
+```
+
+If your friend forgets setup steps, she can run:
+
+```bash
+make windows-guide
+```
+
 ## 📋 Prerequisites
 
 - Python 3.8+

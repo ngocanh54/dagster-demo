@@ -1,8 +1,25 @@
-.PHONY: install dev test clean clean-all help venv
+.PHONY: install dev test clean clean-all help check-venv windows-guide
 
 VENV := venv
-PYTHON := $(VENV)/bin/python
-PIP := $(VENV)/bin/pip
+
+ifeq ($(OS),Windows_NT)
+PYTHON_BOOTSTRAP := py -3
+VENV_PYTHON := $(VENV)/Scripts/python.exe
+VENV_PIP := $(VENV)/Scripts/pip.exe
+VENV_DAGSTER := $(VENV)/Scripts/dagster.exe
+VENV_PYTEST := $(VENV)/Scripts/pytest.exe
+else
+PYTHON_BOOTSTRAP := python3
+VENV_PYTHON := $(VENV)/bin/python
+VENV_PIP := $(VENV)/bin/pip
+VENV_DAGSTER := $(VENV)/bin/dagster
+VENV_PYTEST := $(VENV)/bin/pytest
+endif
+
+PYTHON := $(VENV_PYTHON)
+PIP := $(VENV_PIP)
+DAGSTER := $(VENV_DAGSTER)
+PYTEST := $(VENV_PYTEST)
 
 # Default target
 help:
@@ -13,17 +30,18 @@ help:
 	@echo "make test       - Run tests"
 	@echo "make clean      - Remove build artifacts and cache files"
 	@echo "make clean-all  - Remove venv and all build artifacts"
+	@echo "make windows-guide - Print Windows setup/run notes"
 	@echo ""
 	@echo "Quick start: make install && make dev"
 
 # Create virtual environment
-$(VENV)/bin/activate:
+$(PYTHON):
 	@echo "Creating virtual environment..."
-	python3 -m venv $(VENV)
+	$(PYTHON_BOOTSTRAP) -m venv $(VENV)
 	@echo "✓ Virtual environment created"
 
 # Install dependencies in editable mode
-install: $(VENV)/bin/activate
+install: $(PYTHON)
 	@echo "Installing dependencies..."
 	$(PIP) install --upgrade pip
 	$(PIP) install -e ".[dev]"
@@ -34,32 +52,37 @@ install: $(VENV)/bin/activate
 # Start Dagster development server
 # This combines both webserver and daemon (like running airflow webserver + scheduler)
 # Loads both code locations: ingestion_pipelines and data_marts
-dev:
-	@if [ ! -d "$(VENV)" ]; then \
-		echo "❌ Virtual environment not found. Run 'make install' first."; \
-		exit 1; \
-	fi
+check-venv:
+	@$(PYTHON_BOOTSTRAP) -c "import pathlib,sys; p=pathlib.Path(r'$(PYTHON)'); print(\"Virtual environment not found. Run 'make install' first.\") if not p.exists() else None; sys.exit(0 if p.exists() else 1)"
+
+dev: check-venv
 	@echo "Starting Dagster webserver with multiple code locations..."
 	@echo "  - ingestion_pipelines (data ingestion)"
 	@echo "  - data_marts (analytics aggregations)"
 	@echo ""
 	@echo "Access the UI at: http://localhost:3000"
 	@echo ""
-	$(VENV)/bin/dagster dev -w workspace.yaml
+	$(DAGSTER) dev -w workspace.yaml
 
 # Run tests
-test:
-	$(VENV)/bin/pytest tests/
+test: check-venv
+	$(PYTEST) tests/
 
 # Clean build artifacts
 clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete
+	$(PYTHON_BOOTSTRAP) -c "from pathlib import Path; import shutil; [shutil.rmtree(p, ignore_errors=True) for p in Path('.').rglob('__pycache__') if p.is_dir()]; [shutil.rmtree(p, ignore_errors=True) for p in Path('.').rglob('*.egg-info') if p.is_dir()]; [shutil.rmtree(p, ignore_errors=True) for p in Path('.').rglob('.pytest_cache') if p.is_dir()]; [p.unlink(missing_ok=True) for p in Path('.').rglob('*.pyc') if p.is_file()]"
 	@echo "✓ Cleaned build artifacts"
 
 # Clean everything including venv
 clean-all: clean
-	rm -rf $(VENV)
+	$(PYTHON_BOOTSTRAP) -c "from pathlib import Path; import shutil; shutil.rmtree(Path('$(VENV)'), ignore_errors=True)"
 	@echo "✓ Removed virtual environment"
+
+# Windows notes for users cloning this repo
+windows-guide:
+	@echo "Windows setup:"
+	@echo "1) Install Python 3.10+ and check 'Add python.exe to PATH'"
+	@echo "2) Install GNU Make (via Chocolatey: choco install make, or use Git Bash)"
+	@echo "3) Run: make install"
+	@echo "4) Run: make dev"
+	@echo "5) Open: http://localhost:3000"
