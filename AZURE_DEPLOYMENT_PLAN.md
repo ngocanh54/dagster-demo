@@ -37,6 +37,24 @@ flowchart TB
     end
 ```
 
+## Deployment Sequence (Simple View)
+
+```mermaid
+sequenceDiagram
+    participant Team as Data team
+    participant GH as GitHub Actions
+    participant Host as Azure VM/AKS cluster
+    participant KV as Azure Key Vault
+    participant PG as Azure PostgreSQL
+
+    Team->>GH: Push code to main
+    GH->>GH: Build Docker image
+    GH->>Host: Deploy Docker Compose/Kubernetes workloads
+    Host->>KV: Read API credentials
+    Host->>PG: Write Dagster run metadata
+    Host-->>Team: Dagster UI shows pipeline status
+```
+
 ## VM vs AKS: What Actually Changes
 
 | Area | Azure VM | AKS |
