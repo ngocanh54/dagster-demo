@@ -14,6 +14,12 @@ make dev
 # Access UI at http://localhost:3000
 ```
 
+## ☁️ Azure Deployment Plan
+
+For a simple one-environment Azure rollout, see:
+
+- [`AZURE_DEPLOYMENT_PLAN.md`](AZURE_DEPLOYMENT_PLAN.md)
+
 ## 👋 Windows Setup Guide
 
 If you are using Windows, start with this guide:
