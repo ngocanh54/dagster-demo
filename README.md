@@ -14,9 +14,9 @@ make dev
 # Access UI at http://localhost:3000
 ```
 
-## 👋 Non-Technical Windows Setup
+## 👋 Windows Setup Guide
 
-If your friend is not technical, send this guide first:
+If you are using Windows, start with this guide:
 
 - [`WINDOWS_FRIEND_GUIDE.md`](WINDOWS_FRIEND_GUIDE.md)
 
@@ -49,7 +49,7 @@ make install
 make dev
 ```
 
-If your friend forgets setup steps, she can run:
+If you forget setup steps, run:
 
 ```bash
 make windows-guide

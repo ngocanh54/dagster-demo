@@ -112,7 +112,7 @@ Copy the full output and send it to me.
 
 ## Optional: Native Windows path (advanced)
 
-If she does not want WSL, then she needs:
+If you do not want WSL, you need:
 - Python 3.10+
 - GNU Make on Windows (Chocolatey is one way to install it)
 
