@@ -315,21 +315,21 @@ For detailed comparison, see **[AIRFLOW_COMPARISON.md](AIRFLOW_COMPARISON.md)**.
 ## 🎓 When to Use Each Pattern
 
 ### Use YAML (Factory Pattern) When:
-✅ Standard ingestion patterns (API → CSV)
-✅ Many similar pipelines
-✅ Non-developers need to create pipelines
-✅ Consistency is important
+- ✅ Standard ingestion patterns (API -> CSV)
+- ✅ Many similar pipelines
+- ✅ Non-developers need to create pipelines
+- ✅ Consistency is important
 
 ### Use Python (Hand-Written) When:
-✅ Complex transformations (like `data_marts`)
-✅ Custom business logic
-✅ Type safety is priority
-✅ IDE autocomplete needed
+- ✅ Complex transformations (like `data_marts`)
+- ✅ Custom business logic
+- ✅ Type safety is priority
+- ✅ IDE autocomplete needed
 
 ### Use Multiple Code Locations When:
-✅ Different teams own different pipelines
-✅ Different deployment schedules
-✅ Logical separation (ingestion vs analytics)
+- ✅ Different teams own different pipelines
+- ✅ Different deployment schedules
+- ✅ Logical separation (ingestion vs analytics)
 
 ## 🐛 Troubleshooting
 
